@@ -1,0 +1,175 @@
+CREATE OR REPLACE FUNCTION rollback_audience(p_time timestamp) RETURNS VOID AS $$
+DECLARE
+  rec audience_temp%ROWTYPE;
+BEGIN
+  FOR rec IN SELECT * FROM audience_temp WHERE op_time >= p_time ORDER BY op_time DESC LOOP
+    IF rec.operation = 'I' THEN
+      DELETE FROM audience WHERE audience_id = rec.audience_id;
+    ELSIF rec.operation = 'U' THEN
+      UPDATE audience SET number_audience = rec.old_number_audience WHERE audience_id = rec.audience_id;
+    ELSIF rec.operation = 'D' THEN
+      INSERT INTO audience (audience_id, number_audience) VALUES (rec.audience_id, rec.old_number_audience);
+    END IF;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+CREATE OR REPLACE FUNCTION rollback_employee(p_time timestamp) RETURNS VOID AS $$
+DECLARE
+  rec employee_temp%ROWTYPE;
+BEGIN
+  FOR rec IN SELECT * FROM employee_temp WHERE op_time >= p_time ORDER BY op_time DESC LOOP
+    IF rec.operation = 'I' THEN
+      DELETE FROM employee WHERE employee_id = rec.employee_id;
+    ELSIF rec.operation = 'U' THEN
+      UPDATE employee SET first_name = rec.old_first_name, second_name = rec.old_second_name, last_name = rec.old_last_name, password_employee = rec.old_password_employee WHERE employee_id = rec.employee_id;
+    ELSIF rec.operation = 'D' THEN
+      INSERT INTO employee (employee_id, first_name, second_name, last_name, password_employee) VALUES (rec.employee_id, rec.old_first_name, rec.old_second_name, rec.old_last_name, rec.old_password_employee);
+    END IF;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+CREATE OR REPLACE FUNCTION rollback_lecturer(p_time timestamp) RETURNS VOID AS $$
+DECLARE
+  rec lecturer_temp%ROWTYPE;
+BEGIN
+  FOR rec IN SELECT * FROM lecturer_temp WHERE op_time >= p_time ORDER BY op_time DESC LOOP
+    IF rec.operation = 'I' THEN
+      DELETE FROM lecturer WHERE lecturer_id = rec.lecturer_id;
+    ELSIF rec.operation = 'U' THEN
+      UPDATE lecturer SET employee_id = rec.old_employee_id, job_position_id = rec.old_job_position_id WHERE lecturer_id = rec.lecturer_id;
+    ELSIF rec.operation = 'D' THEN
+      INSERT INTO lecturer (lecturer_id, employee_id, job_position_id) VALUES (rec.lecturer_id, rec.old_employee_id, rec.old_job_position_id);
+    END IF;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+CREATE OR REPLACE FUNCTION rollback_direction(p_time timestamp) RETURNS VOID AS $$
+DECLARE
+  rec direction_temp%ROWTYPE;
+BEGIN
+  FOR rec IN SELECT * FROM direction_temp WHERE op_time >= p_time ORDER BY op_time DESC LOOP
+    IF rec.operation = 'I' THEN
+      DELETE FROM direction WHERE direction_id = rec.direction_id;
+    ELSIF rec.operation = 'U' THEN
+      UPDATE direction SET name_direction = rec.old_name_direction WHERE direction_id = rec.direction_id;
+    ELSIF rec.operation = 'D' THEN
+      INSERT INTO direction (direction_id, name_direction) VALUES (rec.direction_id, rec.old_name_direction);
+    END IF;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+CREATE OR REPLACE FUNCTION rollback_team(p_time timestamp) RETURNS VOID AS $$
+DECLARE
+  rec team_temp%ROWTYPE;
+BEGIN
+  FOR rec IN SELECT * FROM team_temp WHERE op_time >= p_time ORDER BY op_time DESC LOOP
+    IF rec.operation = 'I' THEN
+      DELETE FROM team WHERE team_id = rec.team_id;
+    ELSIF rec.operation = 'U' THEN
+      UPDATE team SET name_team = rec.old_name_team, course = rec.old_course, direction_id = rec.old_direction_id WHERE team_id = rec.team_id;
+    ELSIF rec.operation = 'D' THEN
+      INSERT INTO team (team_id, name_team, course, direction_id) VALUES (rec.team_id, rec.old_name_team, rec.old_course, rec.old_direction_id);
+    END IF;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+CREATE OR REPLACE FUNCTION rollback_study_plan(p_time timestamp) RETURNS VOID AS $$
+DECLARE
+  rec study_plan_temp%ROWTYPE;
+BEGIN
+  FOR rec IN SELECT * FROM study_plan_temp WHERE op_time >= p_time ORDER BY op_time DESC LOOP
+    IF rec.operation = 'I' THEN
+      DELETE FROM study_plan WHERE study_plan_id = rec.study_plan_id;
+    ELSIF rec.operation = 'U' THEN
+      UPDATE study_plan SET name_study_plan = rec.old_name_study_plan, semester_study_plan = rec.old_semester_study_plan, subject_study_plan = rec.old_subject_study_plan, direction_id = rec.old_direction_id WHERE study_plan_id = rec.study_plan_id;
+    ELSIF rec.operation = 'D' THEN
+      INSERT INTO study_plan (study_plan_id, name_study_plan, semester_study_plan, subject_study_plan, direction_id) VALUES (rec.study_plan_id, rec.old_name_study_plan, rec.old_semester_study_plan, rec.old_subject_study_plan, rec.old_direction_id);
+    END IF;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+CREATE OR REPLACE FUNCTION rollback_lesson(p_time timestamp) RETURNS VOID AS $$
+DECLARE
+  rec lesson_temp%ROWTYPE;
+BEGIN
+  FOR rec IN SELECT * FROM lesson_temp WHERE op_time >= p_time ORDER BY op_time DESC LOOP
+    IF rec.operation = 'I' THEN
+      DELETE FROM lesson WHERE lesson_id = rec.lesson_id;
+    ELSIF rec.operation = 'U' THEN
+      UPDATE lesson SET study_plan_id = rec.old_study_plan_id, type_lesson_id = rec.old_type_lesson_id, lecturer_id = rec.old_lecturer_id WHERE lesson_id = rec.lesson_id;
+    ELSIF rec.operation = 'D' THEN
+      INSERT INTO lesson (lesson_id, study_plan_id, type_lesson_id, lecturer_id) VALUES (rec.lesson_id, rec.old_study_plan_id, rec.old_type_lesson_id, rec.old_lecturer_id);
+    END IF;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+CREATE OR REPLACE FUNCTION rollback_timetable(p_time timestamp) RETURNS VOID AS $$
+DECLARE
+  rec timetable_temp%ROWTYPE;
+BEGIN
+  FOR rec IN SELECT * FROM timetable_temp WHERE op_time >= p_time ORDER BY op_time DESC LOOP
+    IF rec.operation = 'I' THEN
+      DELETE FROM timetable WHERE timetable_id = rec.timetable_id;
+    ELSIF rec.operation = 'U' THEN
+      UPDATE timetable SET lesson_id = rec.old_lesson_id, weekday_id = rec.old_weekday_id, course_id = rec.old_course_id, audience_id = rec.old_audience_id, type_week = rec.old_type_week, type_semester = rec.old_type_semester WHERE timetable_id = rec.timetable_id;
+    ELSIF rec.operation = 'D' THEN
+      INSERT INTO timetable (timetable_id, lesson_id, weekday_id, course_id, audience_id, type_week, type_semester) VALUES (rec.timetable_id, rec.old_lesson_id, rec.old_weekday_id, rec.old_course_id, rec.old_audience_id, rec.old_type_week, rec.old_type_semester);
+    END IF;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;
+
+
+
+
+
+CREATE OR REPLACE FUNCTION rollback_timetable_team(p_time timestamp) RETURNS VOID AS $$
+DECLARE
+  rec timetable_team_temp%ROWTYPE;
+BEGIN
+  FOR rec IN SELECT * FROM timetable_team_temp WHERE op_time >= p_time ORDER BY op_time DESC LOOP
+    IF rec.operation = 'I' THEN
+      DELETE FROM timetable_team WHERE timetable_id = rec.old_timetable_id AND team_id = rec.old_team_id;
+    ELSIF rec.operation = 'U' THEN
+      UPDATE timetable_team SET timetable_id = rec.old_timetable_id, team_id = rec.old_team_id WHERE timetable_id = rec.new_timetable_id AND team_id = rec.new_team_id;
+    ELSIF rec.operation = 'D' THEN
+      INSERT INTO timetable_team (timetable_id, team_id) VALUES (rec.old_timetable_id, rec.old_team_id);
+    END IF;
+  END LOOP;
+END;
+$$ LANGUAGE plpgsql;

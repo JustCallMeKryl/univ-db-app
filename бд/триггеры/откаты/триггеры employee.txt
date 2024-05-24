@@ -1,0 +1,42 @@
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
+CREATE OR REPLACE FUNCTION hash_password() RETURNS trigger AS $$
+BEGIN
+	IF TG_OP = 'INSERT' OR (TG_OP = 'UPDATE' AND TG_ARGV[0] = 'password_employee') THEN
+		NEW.password_employee = crypt(NEW.password_employee, gen_salt('bf'));
+	END IF;
+	RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS hash_password ON employee;
+CREATE TRIGGER hash_password BEFORE INSERT OR UPDATE OF password_employee ON employee
+FOR EACH ROW EXECUTE PROCEDURE hash_password('password_employee');
+
+CREATE OR REPLACE FUNCTION employee_records() RETURNS trigger AS $$
+BEGIN
+	IF TG_OP = 'INSERT' THEN
+		INSERT INTO employee_temp
+		SELECT 'I', now(), NEW.employee_id, NEW.status, NULL, NULL, NULL, NULL, NEW.first_name, NEW.second_name, NEW.last_name, NEW.password_employee;
+	ELSEIF TG_OP = 'UPDATE' THEN
+		INSERT INTO employee_temp
+		SELECT 'U', now(), NEW.employee_id, NEW.status, OLD.first_name, OLD.second_name, OLD.last_name, OLD.password_employee, NEW.first_name, NEW.second_name, NEW.last_name, NEW.password_employee;
+	ELSEIF TG_OP = 'DELETE' THEN
+		INSERT INTO employee_temp
+		SELECT 'D', now(), OLD.employee_id, OLD.status, OLD.first_name, OLD.second_name, OLD.last_name, OLD.password_employee, NULL, NULL, NULL, NULL;
+	END IF;
+	RETURN NULL;
+END
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS employee_records_insert ON employee;
+CREATE TRIGGER employee_records_insert AFTER INSERT ON employee
+FOR EACH ROW EXECUTE PROCEDURE employee_records();
+
+DROP TRIGGER IF EXISTS employee_records_update ON employee;
+CREATE TRIGGER employee_records_update AFTER UPDATE ON employee
+FOR EACH ROW EXECUTE PROCEDURE employee_records();
+
+DROP TRIGGER IF EXISTS employee_records_delete ON employee;
+CREATE TRIGGER employee_records_delete AFTER DELETE ON employee
+FOR EACH ROW EXECUTE PROCEDURE employee_records();

@@ -1,0 +1,164 @@
+Триггер на вставку в таблицу timetable: Этот триггер проверяет, не занята ли аудитория в это время, прежде чем добавить новую запись в таблицу timetable.
+
+CREATE OR REPLACE FUNCTION check_audience_availability() RETURNS TRIGGER AS $$
+DECLARE
+    room_count INT;
+BEGIN
+    SELECT COUNT(*) INTO room_count
+    FROM timetable
+    WHERE course_id = NEW.course_id AND
+          weekday_id = NEW.weekday_id AND
+          audience_id = NEW.audience_id AND
+          type_week = NEW.type_week AND
+          type_semester = NEW.type_semester;
+
+    IF room_count > 0 THEN
+        RAISE EXCEPTION 'Аудитория уже занята в это время!';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_audience_availability_trigger
+BEFORE INSERT ON timetable
+FOR EACH ROW
+EXECUTE PROCEDURE check_audience_availability();
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------
+Вот пример триггера и триггерной функции, которые проверяют, что у группы не больше 5 пар в один день
+
+CREATE OR REPLACE FUNCTION check_course_limit() RETURNS TRIGGER AS $$
+DECLARE
+    course_count INT;
+BEGIN
+    SELECT COUNT(*) INTO course_count
+    FROM timetable_team tt
+    JOIN timetable t ON tt.timetable_id = t.timetable_id
+    WHERE tt.team_id = NEW.team_id AND
+          t.weekday_id = (SELECT weekday_id FROM timetable WHERE timetable_id = NEW.timetable_id) AND
+          t.type_week = (SELECT type_week FROM timetable WHERE timetable_id = NEW.timetable_id) AND
+          t.type_semester = (SELECT type_semester FROM timetable WHERE timetable_id = NEW.timetable_id);
+
+    IF course_count >= 5 THEN
+        RAISE EXCEPTION 'У группы не может быть больше 5 пар в один день!';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_course_limit_trigger
+BEFORE INSERT ON timetable_team
+FOR EACH ROW
+EXECUTE PROCEDURE check_course_limit();
+
+
+
+
+
+
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Этот триггер будет срабатывать перед каждой вставкой в таблицу timetable. Он проверяет, не проводит ли преподаватель уже занятие в это время в другой аудитории. Если это так, то операция вставки будет отменена, и будет выдано исключение.
+
+
+CREATE OR REPLACE FUNCTION check_lecturer_availability() RETURNS TRIGGER AS $$
+DECLARE
+    lecturer_count INT;
+BEGIN
+    SELECT COUNT(*) INTO lecturer_count
+    FROM timetable t
+    JOIN lesson l ON t.lesson_id = l.lesson_id
+    WHERE l.lecturer_id = (SELECT lecturer_id FROM lesson WHERE lesson_id = NEW.lesson_id) AND
+          t.course_id = NEW.course_id AND
+          t.weekday_id = NEW.weekday_id AND
+          t.type_week = NEW.type_week AND
+          t.type_semester = NEW.type_semester;
+
+    IF lecturer_count > 0 THEN
+        RAISE EXCEPTION 'Преподаватель уже проводит занятие в это время в другой аудитории!';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_lecturer_availability_trigger
+BEFORE INSERT ON timetable
+FOR EACH ROW
+EXECUTE PROCEDURE check_lecturer_availability();
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
+Этот триггер будет срабатывать перед каждой вставкой в таблицу timetable_team. Он проверяет, не проводится ли уже занятие для данной группы в это время. Если это так, то операция вставки будет отменена, и будет выдано исключение.
+
+CREATE OR REPLACE FUNCTION check_team_schedule() RETURNS TRIGGER AS $$
+DECLARE
+  team_count INT;
+BEGIN
+  SELECT COUNT(*) INTO team_count FROM timetable_team tt
+  JOIN timetable t ON tt.timetable_id = t.timetable_id
+  WHERE tt.team_id = NEW.team_id AND 
+        t.weekday_id = (SELECT weekday_id FROM timetable WHERE timetable_id = NEW.timetable_id) AND 
+        t.course_id = (SELECT course_id FROM timetable WHERE timetable_id = NEW.timetable_id) AND
+        t.type_week = (SELECT type_week FROM timetable WHERE timetable_id = NEW.timetable_id) AND
+        t.type_semester = (SELECT type_semester FROM timetable WHERE timetable_id = NEW.timetable_id);
+  IF team_count > 0 THEN
+    RAISE EXCEPTION 'У одной группы в определенный день недели и в определенное время не может быть больше одной пары!';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_team_schedule_trigger BEFORE INSERT ON timetable_team
+FOR EACH ROW EXECUTE PROCEDURE check_team_schedule();
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Если должность преподавателя не является ‘старшим преподавателем’, ‘доцентом’ или ‘профессором’, то операция вставки будет отменена, и будет выдано исключение.
+
+CREATE OR REPLACE FUNCTION check_lecturer_position() RETURNS TRIGGER AS $$
+BEGIN
+  IF (NEW.type_lesson_id = (SELECT type_lesson_id FROM type_lesson WHERE name_lesson = 'лекция') AND 
+      EXISTS (SELECT 1 FROM lecturer 
+              JOIN job_position ON lecturer.job_position_id = job_position.job_position_id 
+              WHERE lecturer.lecturer_id = NEW.lecturer_id AND name_job_position IN ('ассистент', 'преподаватель'))) THEN
+    RAISE EXCEPTION 'Ассистенты и преподаватели не могут вести лекции';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_lecturer_position_trigger
+BEFORE INSERT OR UPDATE ON lesson
+FOR EACH ROW EXECUTE PROCEDURE check_lecturer_position();
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------
+
+
+триггер в PostgreSQL, который будет проверять, является ли сотрудник уже преподавателем, прежде чем добавлять его в таблицу lecturer
+
+CREATE OR REPLACE FUNCTION check_if_employee_is_already_a_lecturer() RETURNS TRIGGER AS $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM lecturer WHERE employee_id = NEW.employee_id) THEN
+        RAISE EXCEPTION 'Сотрудник уже является преподавателем';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER lecturer_before_insert_trigger
+BEFORE INSERT ON lecturer
+FOR EACH ROW
+EXECUTE PROCEDURE check_if_employee_is_already_a_lecturer();

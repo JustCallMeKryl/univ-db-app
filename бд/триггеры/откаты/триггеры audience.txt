@@ -1,0 +1,27 @@
+CREATE OR REPLACE FUNCTION audience_records() RETURNS trigger AS $$
+BEGIN
+	IF TG_OP = 'INSERT' THEN
+		INSERT INTO audience_temp
+		SELECT 'I', now(), NEW.audience_id, NULL, NEW.number_audience;
+	ELSEIF TG_OP = 'UPDATE' THEN
+		INSERT INTO audience_temp
+		SELECT 'U', now(), NEW.audience_id, OLD.number_audience, NEW.number_audience;
+	ELSEIF TG_OP = 'DELETE' THEN
+		INSERT INTO audience_temp
+		SELECT 'D', now(), OLD.audience_id, OLD.number_audience, NULL;
+	END IF;
+	RETURN NULL;
+END
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS audience_records_insert ON audience;
+CREATE TRIGGER audience_records_insert AFTER INSERT ON audience
+FOR EACH ROW EXECUTE PROCEDURE audience_records();
+
+DROP TRIGGER IF EXISTS audience_records_update ON audience;
+CREATE TRIGGER audience_records_update AFTER UPDATE ON audience
+FOR EACH ROW EXECUTE PROCEDURE audience_records();
+
+DROP TRIGGER IF EXISTS audience_records_delete ON audience;
+CREATE TRIGGER audience_records_delete AFTER DELETE ON audience
+FOR EACH ROW EXECUTE PROCEDURE audience_records();

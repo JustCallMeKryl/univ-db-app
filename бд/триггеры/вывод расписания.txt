@@ -1,0 +1,32 @@
+CREATE OR REPLACE FUNCTION get_timetable(p_name_team text, p_type_semester char)
+RETURNS TABLE(
+    name_weekday text,
+    time_course text,
+    number_audience text,
+    name_lesson text,
+    subject_study_plan text,
+    name_job_position text,
+    last_name text,
+    first_name text,
+    second_name text, 
+    type_week char
+) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT weekday.name_weekday, course.time_course, audience.number_audience, type_lesson.name_lesson, study_plan.subject_study_plan, job_position.name_job_position, employee.last_name, employee.first_name, employee.second_name, timetable.type_week
+    FROM timetable_team
+    JOIN team USING (team_id)
+    JOIN timetable USING (timetable_id)
+    JOIN weekday USING (weekday_id)
+    JOIN course USING (course_id)
+    JOIN audience USING (audience_id)
+    JOIN lesson USING (lesson_id)
+    JOIN study_plan USING (study_plan_id)
+    JOIN type_lesson USING (type_lesson_id)
+    JOIN lecturer USING (lecturer_id)
+    JOIN employee USING (employee_id)
+    JOIN job_position USING (job_position_id)
+    WHERE name_team = p_name_team AND timetable.type_semester = p_type_semester
+    ORDER BY type_week DESC, weekday, time_course ASC;
+END; 
+$$ LANGUAGE plpgsql;

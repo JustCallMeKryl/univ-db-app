@@ -1,0 +1,98 @@
+-- день недели 
+CREATE TABLE weekday (
+    weekday_id serial PRIMARY KEY,
+    name_weekday text UNIQUE NOT NULL
+);
+
+-- пара 
+CREATE TABLE course (
+    course_id serial PRIMARY KEY,
+    time_course text UNIQUE NOT NULL,
+    number_course int UNIQUE NOT NULL
+);
+
+-- аудитория 
+CREATE TABLE audience (
+    audience_id serial PRIMARY KEY,
+   number_audience text UNIQUE NOT NULL
+);
+
+-- сотрудник 
+CREATE TABLE employee (
+    employee_id serial PRIMARY KEY,
+    first_name text NOT NULL,
+    second_name text NOT NULL,
+    last_name text NOT NULL,
+  password_employee text NOT NULL,
+ status char DEFAULT 's'
+);
+
+-- должность 
+CREATE TABLE job_position (
+    job_position_id serial PRIMARY KEY,
+    name_job_position text UNIQUE NOT NULL
+);
+
+-- преподаватель 
+CREATE TABLE lecturer (
+   lecturer_id serial PRIMARY KEY,
+    employee_id int REFERENCES employee(employee_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    job_position_id int REFERENCES job_position(job_position_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL
+);
+
+-- направление
+CREATE TABLE direction (
+	direction_id serial PRIMARY KEY,
+	name_direction text UNIQUE NOT NULL
+);
+
+-- группа
+CREATE TABLE team (
+	team_id serial PRIMARY KEY,
+	name_team text UNIQUE NOT NULL,
+	course int NOT NULL,
+	direction_id int REFERENCES direction(direction_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL
+);
+
+-- учебный план
+CREATE TABLE study_plan (
+	study_plan_id serial PRIMARY KEY,
+	name_study_plan text NOT NULL,
+	semester_study_plan int NOT NULL,
+	subject_study_plan text UNIQUE NOT NULL,
+	direction_id int REFERENCES direction(direction_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL
+);
+
+-- тип занятия 
+CREATE TABLE type_lesson (
+    type_lesson_id serial PRIMARY KEY,
+    name_lesson text UNIQUE NOT NULL
+); 
+
+-- занятие 
+CREATE TABLE lesson (
+    lesson_id serial PRIMARY KEY,
+    study_plan_id int REFERENCES study_plan(study_plan_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    type_lesson_id int REFERENCES type_lesson(type_lesson_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    lecturer_id int REFERENCES lecturer(lecturer_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL, 
+   UNIQUE (study_plan_id, type_lesson_id, lecturer_id)
+); 
+
+-- расписание
+CREATE TABLE timetable (
+    timetable_id serial PRIMARY KEY,
+    lesson_id int REFERENCES lesson(lesson_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    weekday_id int REFERENCES weekday(weekday_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    course_id int REFERENCES course(course_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    audience_id int REFERENCES audience(audience_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+	type_week char(1) NOT NULL,
+	type_semester char(1) NOT NULL,
+   UNIQUE(lesson_id, weekday_id, course_id, audience_id, type_week, type_semester)
+);
+
+-- расписание + группа
+CREATE TABLE timetable_team (
+    timetable_id int REFERENCES timetable(timetable_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    team_id int REFERENCES team(team_id) ON DELETE CASCADE ON UPDATE CASCADE NOT NULL,
+    CONSTRAINT timetable_team_pkey PRIMARY KEY (timetable_id, team_id)
+);

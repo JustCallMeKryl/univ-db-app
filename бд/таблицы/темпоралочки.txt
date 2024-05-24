@@ -1,0 +1,114 @@
+-- аудитория 
+CREATE TABLE audience_temp (
+	operation char(1) NOT NULL,
+    op_time timestamp without time zone NOT NULL,
+    audience_id int,
+    old_number_audience text,
+	new_number_audience text
+);
+
+CREATE TABLE employee_temp (
+    operation char(1) NOT NULL,
+    op_time timestamp without time zone NOT NULL,
+    employee_id int NOT NULL,
+	status char NOT NULL,
+    old_first_name text,
+    old_second_name text,
+    old_last_name text,
+    old_password_employee text,
+    new_first_name text,
+    new_second_name text,
+    new_last_name text,
+    new_password_employee text
+);
+
+-- преподаватель 
+CREATE TABLE lecturer_temp (
+	operation char(1) NOT NULL,
+    op_time timestamp without time zone NOT NULL,
+    lecturer_id int,
+    old_employee_id int,
+    old_job_position_id int,
+	new_employee_id int,
+    new_job_position_id int
+);
+
+-- направление
+CREATE TABLE direction_temp (
+	operation char(1) NOT NULL,
+    op_time timestamp without time zone NOT NULL,
+	direction_id int,
+	old_name_direction text,
+	new_name_direction text
+);
+
+-- группа
+CREATE TABLE team_temp (
+	operation char(1) NOT NULL,
+    op_time timestamp without time zone NOT NULL,
+	team_id int,
+	old_name_team text,
+	old_course int,
+	old_direction_id int,
+	new_name_team text,
+	new_course int,
+	new_direction_id int
+);
+
+-- учебный план
+CREATE TABLE study_plan_temp (
+	operation char(1) NOT NULL,
+    op_time timestamp without time zone NOT NULL,
+	study_plan_id int,
+	old_name_study_plan text,
+	old_semester_study_plan int,
+	old_subject_study_plan text,
+	old_direction_id int,
+	new_name_study_plan text,
+	new_semester_study_plan int,
+	new_subject_study_plan text,
+	new_direction_id int
+);
+
+-- занятие 
+CREATE TABLE lesson_temp (
+	operation char(1) NOT NULL,
+    op_time timestamp without time zone NOT NULL,
+    lesson_id int,
+    old_study_plan_id int,
+    old_type_lesson_id int,
+    old_lecturer_id int,
+	new_study_plan_id int,
+    new_type_lesson_id int,
+    new_lecturer_id int 
+); 
+
+-- расписание
+CREATE TABLE timetable_temp (
+	operation char(1) NOT NULL,
+    op_time timestamp without time zone NOT NULL,
+    timetable_id int,
+    old_lesson_id int,
+    old_weekday_id int,
+    old_course_id int,
+    old_audience_id int,
+	old_type_week char,
+	old_type_semester char,
+	new_lesson_id int,
+    new_weekday_id int,
+    new_course_id int,
+    new_audience_id int,
+	new_type_week char,
+	new_type_semester char
+);
+
+
+-- расписание + группа
+CREATE TABLE timetable_team_temp (
+	operation char(1) NOT NULL,
+    op_time timestamp without time zone NOT NULL,
+    old_timetable_id int,
+    old_team_id int,
+	new_timetable_id int,
+    new_team_id int
+);

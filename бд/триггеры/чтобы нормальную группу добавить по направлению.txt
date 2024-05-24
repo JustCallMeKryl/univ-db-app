@@ -1,0 +1,28 @@
+CREATE OR REPLACE FUNCTION check_group_name() RETURNS TRIGGER AS $$
+DECLARE
+    study_plan_exists boolean;
+    first_digit_in_group_name int;
+    group_name_letters text;
+BEGIN
+    first_digit_in_group_name := (SELECT CAST(SUBSTRING(NEW.name_team, '([0-9]{1})') AS INTEGER));
+    group_name_letters := (SELECT REGEXP_REPLACE(NEW.name_team, '[^а-яА-Яa-zA-Z]', '', 'g'));
+    SELECT EXISTS (
+        SELECT 1 FROM study_plan 
+        WHERE direction_id = NEW.direction_id 
+        AND SUBSTRING(name_study_plan, '([0-9]{1})')::int = first_digit_in_group_name 
+        AND REGEXP_REPLACE(name_study_plan, '[^а-яА-Яa-zA-Z]', '', 'g') = group_name_letters
+    ) INTO study_plan_exists;
+    IF (study_plan_exists AND first_digit_in_group_name = NEW.course) THEN
+        RETURN NEW;
+    ELSE
+        RAISE EXCEPTION 'Данную группу нельзя добавить!';
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS check_group_name_trigger ON team;
+
+CREATE TRIGGER check_group_name_trigger
+BEFORE INSERT ON team
+FOR EACH ROW
+EXECUTE PROCEDURE check_group_name();

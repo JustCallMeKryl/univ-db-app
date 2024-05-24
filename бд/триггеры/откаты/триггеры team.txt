@@ -1,0 +1,27 @@
+CREATE OR REPLACE FUNCTION team_records() RETURNS trigger AS $$
+BEGIN
+	IF TG_OP = 'INSERT' THEN
+		INSERT INTO team_temp
+		SELECT 'I', now(), NEW.team_id, NULL, NULL, NULL, NEW.name_team, NEW.course, NEW.direction_id;
+	ELSEIF TG_OP = 'UPDATE' THEN
+		INSERT INTO team_temp
+		SELECT 'U', now(), NEW.team_id, OLD.name_team, OLD.course, OLD.direction_id, NEW.name_team, NEW.course, NEW.direction_id;
+	ELSEIF TG_OP = 'DELETE' THEN
+		INSERT INTO team_temp
+		SELECT 'D', now(), OLD.team_id, OLD.name_team, OLD.course, OLD.direction_id, NULL, NULL, NULL;
+	END IF;
+	RETURN NULL;
+END
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS team_records_insert ON team;
+CREATE TRIGGER team_records_insert AFTER INSERT ON team
+FOR EACH ROW EXECUTE PROCEDURE team_records();
+
+DROP TRIGGER IF EXISTS team_records_update ON team;
+CREATE TRIGGER team_records_update AFTER UPDATE ON team
+FOR EACH ROW EXECUTE PROCEDURE team_records();
+
+DROP TRIGGER IF EXISTS team_records_delete ON team;
+CREATE TRIGGER team_records_delete AFTER DELETE ON team
+FOR EACH ROW EXECUTE PROCEDURE team_records();

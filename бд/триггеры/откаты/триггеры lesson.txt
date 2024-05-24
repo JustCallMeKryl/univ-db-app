@@ -1,0 +1,27 @@
+CREATE OR REPLACE FUNCTION lesson_records() RETURNS trigger AS $$
+BEGIN
+	IF TG_OP = 'INSERT' THEN
+		INSERT INTO lesson_temp
+		SELECT 'I', now(), NEW.lesson_id, NULL, NULL, NULL, NEW.study_plan_id, NEW.type_lesson_id, NEW.lecturer_id;
+	ELSEIF TG_OP = 'UPDATE' THEN
+		INSERT INTO lesson_temp
+		SELECT 'U', now(), NEW.lesson_id, OLD.study_plan_id, OLD.type_lesson_id, OLD.lecturer_id, NEW.study_plan_id, NEW.type_lesson_id, NEW.lecturer_id;
+	ELSEIF TG_OP = 'DELETE' THEN
+		INSERT INTO lesson_temp
+		SELECT 'D', now(), OLD.lesson_id, OLD.study_plan_id, OLD.type_lesson_id, OLD.lecturer_id, NULL, NULL, NULL;
+	END IF;
+	RETURN NULL;
+END
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS lesson_records_insert ON lesson;
+CREATE TRIGGER lesson_records_insert AFTER INSERT ON lesson
+FOR EACH ROW EXECUTE PROCEDURE lesson_records();
+
+DROP TRIGGER IF EXISTS lesson_records_update ON lesson;
+CREATE TRIGGER lesson_records_update AFTER UPDATE ON lesson
+FOR EACH ROW EXECUTE PROCEDURE lesson_records();
+
+DROP TRIGGER IF EXISTS lesson_records_delete ON lesson;
+CREATE TRIGGER lesson_records_delete AFTER DELETE ON lesson
+FOR EACH ROW EXECUTE PROCEDURE lesson_records();

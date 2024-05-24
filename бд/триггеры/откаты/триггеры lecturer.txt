@@ -1,0 +1,27 @@
+CREATE OR REPLACE FUNCTION lecturer_records() RETURNS trigger AS $$
+BEGIN
+	IF TG_OP = 'INSERT' THEN
+		INSERT INTO lecturer_temp
+		SELECT 'I', now(), NEW.lecturer_id, NULL, NULL, NEW.employee_id, NEW.job_position_id;
+	ELSEIF TG_OP = 'UPDATE' THEN
+		INSERT INTO lecturer_temp
+		SELECT 'U', now(), NEW.lecturer_id, OLD.employee_id, OLD.job_position_id, NEW.employee_id, NEW.job_position_id;
+	ELSEIF TG_OP = 'DELETE' THEN
+		INSERT INTO lecturer_temp
+		SELECT 'D', now(), OLD.lecturer_id, OLD.employee_id, OLD.job_position_id, NULL, NULL;
+	END IF;
+	RETURN NULL;
+END
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS lecturer_records_insert ON lecturer;
+CREATE TRIGGER lecturer_records_insert AFTER INSERT ON lecturer
+FOR EACH ROW EXECUTE PROCEDURE lecturer_records();
+
+DROP TRIGGER IF EXISTS lecturer_records_update ON lecturer;
+CREATE TRIGGER lecturer_records_update AFTER UPDATE ON lecturer
+FOR EACH ROW EXECUTE PROCEDURE lecturer_records();
+
+DROP TRIGGER IF EXISTS lecturer_records_delete ON lecturer;
+CREATE TRIGGER lecturer_records_delete AFTER DELETE ON lecturer
+FOR EACH ROW EXECUTE PROCEDURE lecturer_records();

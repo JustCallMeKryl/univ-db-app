@@ -1,0 +1,27 @@
+CREATE OR REPLACE FUNCTION study_plan_records() RETURNS trigger AS $$
+BEGIN
+	IF TG_OP = 'INSERT' THEN
+		INSERT INTO study_plan_temp
+		SELECT 'I', now(), NEW.study_plan_id, NULL, NULL, NULL, NULL, NEW.name_study_plan, NEW.semester_study_plan, NEW.subject_study_plan, NEW.direction_id;
+	ELSEIF TG_OP = 'UPDATE' THEN
+		INSERT INTO study_plan_temp
+		SELECT 'U', now(), NEW.study_plan_id, OLD.name_study_plan, OLD.semester_study_plan, OLD.subject_study_plan, OLD.direction_id, NEW.name_study_plan, NEW.semester_study_plan, NEW.subject_study_plan, NEW.direction_id;
+	ELSEIF TG_OP = 'DELETE' THEN
+		INSERT INTO study_plan_temp
+		SELECT 'D', now(), OLD.study_plan_id, OLD.name_study_plan, OLD.semester_study_plan, OLD.subject_study_plan, OLD.direction_id, NULL, NULL, NULL, NULL;
+	END IF;
+	RETURN NULL;
+END
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS study_plan_records_insert ON study_plan;
+CREATE TRIGGER study_plan_records_insert AFTER INSERT ON study_plan
+FOR EACH ROW EXECUTE PROCEDURE study_plan_records();
+
+DROP TRIGGER IF EXISTS study_plan_records_update ON study_plan;
+CREATE TRIGGER study_plan_records_update AFTER UPDATE ON study_plan
+FOR EACH ROW EXECUTE PROCEDURE study_plan_records();
+
+DROP TRIGGER IF EXISTS study_plan_records_delete ON study_plan;
+CREATE TRIGGER study_plan_records_delete AFTER DELETE ON study_plan
+FOR EACH ROW EXECUTE PROCEDURE study_plan_records();

@@ -1,0 +1,27 @@
+CREATE OR REPLACE FUNCTION direction_records() RETURNS trigger AS $$
+BEGIN
+	IF TG_OP = 'INSERT' THEN
+		INSERT INTO direction_temp
+		SELECT 'I', now(), NEW.direction_id, NULL, NEW.name_direction;
+	ELSEIF TG_OP = 'UPDATE' THEN
+		INSERT INTO direction_temp
+		SELECT 'U', now(), NEW.direction_id, OLD.name_direction, NEW.name_direction;
+	ELSEIF TG_OP = 'DELETE' THEN
+		INSERT INTO direction_temp
+		SELECT 'D', now(), OLD.direction_id, OLD.name_direction, NULL;
+	END IF;
+	RETURN NULL;
+END
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS direction_records_insert ON direction;
+CREATE TRIGGER direction_records_insert AFTER INSERT ON direction
+FOR EACH ROW EXECUTE PROCEDURE direction_records();
+
+DROP TRIGGER IF EXISTS direction_records_update ON direction;
+CREATE TRIGGER direction_records_update AFTER UPDATE ON direction
+FOR EACH ROW EXECUTE PROCEDURE direction_records();
+
+DROP TRIGGER IF EXISTS direction_records_delete ON direction;
+CREATE TRIGGER direction_records_delete AFTER DELETE ON direction
+FOR EACH ROW EXECUTE PROCEDURE direction_records();

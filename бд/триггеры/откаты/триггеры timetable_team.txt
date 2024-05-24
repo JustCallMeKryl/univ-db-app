@@ -1,0 +1,27 @@
+CREATE OR REPLACE FUNCTION timetable_team_records() RETURNS trigger AS $$
+BEGIN
+	IF TG_OP = 'INSERT' THEN
+		INSERT INTO timetable_team_temp
+		SELECT 'I', now(), NULL, NULL, NEW.timetable_id, NEW.team_id;
+	ELSEIF TG_OP = 'UPDATE' THEN
+		INSERT INTO timetable_team_temp
+		SELECT 'U', now(), OLD.timetable_id, OLD.team_id, NEW.timetable_id, NEW.team_id;
+	ELSEIF TG_OP = 'DELETE' THEN
+		INSERT INTO timetable_team_temp
+		SELECT 'D', now(), OLD.timetable_id, OLD.team_id, NULL, NULL;
+	END IF;
+	RETURN NULL;
+END
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS timetable_team_records_insert ON timetable_team;
+CREATE TRIGGER timetable_team_records_insert AFTER INSERT ON timetable_team
+FOR EACH ROW EXECUTE PROCEDURE timetable_team_records();
+
+DROP TRIGGER IF EXISTS timetable_team_records_update ON timetable_team;
+CREATE TRIGGER timetable_team_records_update AFTER UPDATE ON timetable_team
+FOR EACH ROW EXECUTE PROCEDURE timetable_team_records();
+
+DROP TRIGGER IF EXISTS timetable_team_records_delete ON timetable_team;
+CREATE TRIGGER timetable_team_records_delete AFTER DELETE ON timetable_team
+FOR EACH ROW EXECUTE PROCEDURE timetable_team_records();

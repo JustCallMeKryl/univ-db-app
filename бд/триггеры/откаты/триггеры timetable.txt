@@ -1,0 +1,27 @@
+CREATE OR REPLACE FUNCTION timetable_records() RETURNS trigger AS $$
+BEGIN
+	IF TG_OP = 'INSERT' THEN
+		INSERT INTO timetable_temp
+		SELECT 'I', now(), NEW.timetable_id, NULL, NULL, NULL, NULL, NULL, NULL, NEW.lesson_id, NEW.weekday_id, NEW.course_id, NEW.audience_id, NEW.type_week, NEW.type_semester;
+	ELSEIF TG_OP = 'UPDATE' THEN
+		INSERT INTO timetable_temp
+		SELECT 'U', now(), NEW.timetable_id, OLD.lesson_id, OLD.weekday_id, OLD.course_id, OLD.audience_id, OLD.type_week, OLD.type_semester, NEW.lesson_id, NEW.weekday_id, NEW.course_id, NEW.audience_id, NEW.type_week, NEW.type_semester;
+	ELSEIF TG_OP = 'DELETE' THEN
+		INSERT INTO timetable_temp
+		SELECT 'D', now(), OLD.timetable_id, OLD.lesson_id, OLD.weekday_id, OLD.course_id, OLD.audience_id, OLD.type_week, OLD.type_semester, NULL, NULL, NULL, NULL, NULL, NULL;
+	END IF;
+	RETURN NULL;
+END
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS timetable_records_insert ON timetable;
+CREATE TRIGGER timetable_records_insert AFTER INSERT ON timetable
+FOR EACH ROW EXECUTE PROCEDURE timetable_records();
+
+DROP TRIGGER IF EXISTS timetable_records_update ON timetable;
+CREATE TRIGGER timetable_records_update AFTER UPDATE ON timetable
+FOR EACH ROW EXECUTE PROCEDURE timetable_records();
+
+DROP TRIGGER IF EXISTS timetable_records_delete ON timetable;
+CREATE TRIGGER timetable_records_delete AFTER DELETE ON timetable
+FOR EACH ROW EXECUTE PROCEDURE timetable_records();
